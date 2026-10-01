@@ -1,6 +1,7 @@
 """
 fraud-watchdog — PLC-style fail-safe temporal gate for payments.
 Default state: BLOCKED. Must pass ALL checks to proceed.
+Auth:PV-J 30/9/26
 """
 
 from dataclasses import dataclass, field

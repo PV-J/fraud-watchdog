@@ -1,0 +1,170 @@
+"""
+fraud-watchdog — Scam scenario definitions.
+Each scenario is a dict that can be fed to demo.py.
+Auth: P-VJ/1/10/26
+"""
+
+SCENARIOS = {
+
+    "digital_arrest": {
+        "name": "Digital Arrest Scam",
+        "description": "Caller claims CBI/police, demands immediate transfer. User panics and confirms in 4 seconds.",
+        "events": [
+            ("open_app",       0),
+            ("select_contact", 1),
+            ("enter_amount",   2),
+            ("verify",         3),
+            ("confirm",        4),
+        ],
+        "last_txn_offset_sec": -10,
+        "last_scam_alert_offset_sec": -120,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+        "hour": 14,
+        "expected": "TRIPPED",
+        "expected_faults": ["VELOCITY_WATCHDOG", "SCAM_PROXIMITY_WATCHDOG", "DWELL_TIME_VIOLATION"],
+    },
+
+    "legit_payment": {
+        "name": "Legit Payment to Trusted Contact",
+        "description": "Normal payment to a shop. User takes their time. No scam alerts.",
+        "events": [
+            ("open_app",       0),
+            ("select_contact", 3),
+            ("enter_amount",   8),
+            ("verify",         14),
+            ("confirm",        17),
+        ],
+        "last_txn_offset_sec": -7200,
+        "last_scam_alert_offset_sec": None,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+        "hour": 14,
+        "expected": "PASS",
+        "expected_faults": [],
+    },
+
+    "overlay_attack": {
+        "name": "Malware Overlay During Payment",
+        "description": "Malware creates a fake PIN entry overlay. User types PIN into the overlay, not the real app.",
+        "events": [
+            ("open_app",       0),
+            ("select_contact", 4),
+            ("enter_amount",   10),
+            ("verify",         15),
+            ("confirm",        18),
+        ],
+        "last_txn_offset_sec": None,
+        "last_scam_alert_offset_sec": None,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": False,
+        "hour": 14,
+        "expected": "TRIPPED",
+        "expected_faults": ["HEARTBEAT_LOSS"],
+    },
+
+    "late_night_rush": {
+        "name": "3 AM Transaction (Outside Normal Hours)",
+        "description": "User (or attacker with phone) attempts transfer at 3 AM. Outside learned normal hours (8 AM – 10 PM).",
+        "events": [
+            ("open_app",       0),
+            ("select_contact", 4),
+            ("enter_amount",   10),
+            ("verify",         15),
+            ("confirm",        18),
+        ],
+        "last_txn_offset_sec": None,
+        "last_scam_alert_offset_sec": None,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+        "hour": 3,
+        "expected": "TRIPPED",
+        "expected_faults": ["TIME_OF_DAY_WATCHDOG"],
+    },
+
+    "otp_phishing": {
+        "name": "OTP Phishing — Fast Sequence After SMS",
+        "description": "User receives fake 'bank verification' SMS, immediately opens app and enters OTP. 2 min after scam SMS.",
+        "events": [
+            ("open_app",       0),
+            ("select_contact", 1),
+            ("enter_amount",   3),
+            ("verify",         5),
+            ("confirm",        6),
+        ],
+        "last_txn_offset_sec": None,
+        "last_scam_alert_offset_sec": -110,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+        "hour": 11,
+        "expected": "TRIPPED",
+        "expected_faults": ["SCAM_PROXIMITY_WATCHDOG", "DWELL_TIME_VIOLATION"],
+    },
+
+    "velocity_burst": {
+        "name": "Rapid Fire Transfers (Mule Account Pattern)",
+        "description": "7th transaction in the same hour. Classic mule account behaviour.",
+        "events": [
+            ("open_app",       0),
+            ("select_contact", 4),
+            ("enter_amount",   9),
+            ("verify",         14),
+            ("confirm",        17),
+        ],
+        "last_txn_offset_sec": -45,
+        "last_scam_alert_offset_sec": None,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+        "hour": 15,
+        "txn_count_this_hour": 7,
+        "expected": "TRIPPED",
+        "expected_faults": ["VELOCITY_WATCHDOG", "TXN_COUNT_WATCHDOG"],
+    },
+
+    "screen_off_replay": {
+        "name": "Screen-Off Replay Attack",
+        "description": "Attacker replays a captured transaction while screen is off (phone in pocket).",
+        "events": [
+            ("open_app",       0),
+            ("select_contact", 2),
+            ("enter_amount",   6),
+            ("verify",         10),
+            ("confirm",        13),
+        ],
+        "last_txn_offset_sec": None,
+        "last_scam_alert_offset_sec": None,
+        "screen_on": False,
+        "touch_active": False,
+        "no_overlay": True,
+        "hour": 14,
+        "expected": "TRIPPED",
+        "expected_faults": ["HEARTBEAT_LOSS"],
+    },
+
+    "elderly_user_slow": {
+        "name": "Elderly User — Slow but Legit",
+        "description": "65-year-old takes 45 seconds to select a contact. All dwells are long. Should PASS.",
+        "events": [
+            ("open_app",       0),
+            ("select_contact", 45),
+            ("enter_amount",   90),
+            ("verify",         120),
+            ("confirm",        135),
+        ],
+        "last_txn_offset_sec": -86400,
+        "last_scam_alert_offset_sec": None,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+        "hour": 10,
+        "expected": "PASS",
+        "expected_faults": [],
+    },
+
+}   
