@@ -1,0 +1,20 @@
+# rules/default.yaml
+watchdog:
+  min_seconds_between_txns: 30
+  min_scam_proximity_sec: 300
+  max_txn_per_hour: 5
+  normal_hours: [8, 22]   # 8 AM to 10 PM
+
+dwell_min:
+  open_app: 2
+  select_contact: 3
+  enter_amount: 5
+  verify: 2
+
+expected_sequence:
+  - open_app
+  - select_contact
+  - enter_amount
+  - verify
+  - confirm
+
