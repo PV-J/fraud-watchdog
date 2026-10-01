@@ -2,12 +2,21 @@
 fraud-watchdog — PLC-style fail-safe temporal gate for payments.
 Default state: BLOCKED. Must pass ALL checks to proceed.
 Auth:PV-J 30/9/26
+Modified on 1/10/26
 """
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import List, Tuple, Optional
 
+import yaml
+import os
+
+def load_rules(path=None):
+    if path is None:
+        path = os.path.join(os.path.dirname(__file__), "rules", "default.yml")
+    with open(path) as f:
+        return yaml.safe_load(f)
 
 @dataclass
 class UserProfile:
@@ -48,11 +57,22 @@ class TransactionWatchdog:
     }
     EXPECTED_SEQUENCE = ["open_app", "select_contact", "enter_amount", "verify", "confirm"]
 
-    def __init__(self, user: UserProfile):
+    def __init__(self, user: UserProfile, rules: dict = None):
+        if rules is None:
+            rules = load_rules()
         self.user = user
         self.state = "SAFE"
-        self.fault_reason: Optional[str] = None
-        self.tripped_checks: List[str] = []
+        self.fault_reason = None
+        self.tripped_checks = []
+
+        # Load from YAML instead of hardcoding
+        w = rules["watchdog"]
+        self.MIN_SECONDS_BETWEEN_TXNS = w["min_seconds_between_txns"]
+        self.MIN_SCAM_PROXIMITY = w["min_scam_proximity_sec"]
+        self.MAX_TXN_PER_HOUR = w["max_txn_per_hour"]
+        self.NORMAL_HOURS = set(range(w["normal_hours"][0], w["normal_hours"][1]))
+        self.MIN_DWELL = rules["dwell_min"]
+        self.EXPECTED_SEQUENCE = rules["expected_sequence"]
 
     # --- WATCHDOG TIMERS ---
 
@@ -67,9 +87,9 @@ class TransactionWatchdog:
         return True
 
     def _check_time_of_day(self, ctx: TxnContext) -> bool:
-        if ctx.now.hour not in self.user.normal_hours:
+        if ctx.now.hour not in self.NORMAL_HOURS:
             self._trip("TIME_OF_DAY_WATCHDOG",
-                       f"Unusual hour: {ctx.now.hour}:00")
+                   f"Unusual hour: {ctx.now.hour}:00")
             return False
         return True
 
@@ -84,9 +104,9 @@ class TransactionWatchdog:
         return True
 
     def _check_txn_count(self, ctx: TxnContext) -> bool:
-        if ctx.txn_count_this_hour > self.user.max_txn_per_hour:
+        if ctx.txn_count_this_hour > self.MAX_TXN_PER_HOUR:
             self._trip("TXN_COUNT_WATCHDOG",
-                       f"{ctx.txn_count_this_hour} txns this hour (max {self.user.max_txn_per_hour})")
+                   f"{ctx.txn_count_this_hour} txns this hour (max {self.MAX_TXN_PER_HOUR})")
             return False
         return True
 
