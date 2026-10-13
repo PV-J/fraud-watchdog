@@ -41,18 +41,18 @@ All 8 scenarios run. Output shows the rule that fired and the verdict.
 -  No dependencies beyond stdlib- Runs on any device with Python 3.9+
 -  Decision latency: <50ms per rule
 -  License: Apache 2.0
+
 ## Roadmap
 | Phase | Focus | Status |
 |-------|-------|--------|
 | 1 | **v0.1** — Core watchdog, 8 scenarios, CLI demo, pytest suite| Done |
-| 2 | **v0.2** — Community scenarios (12+), configurable profiles,
-      `--repeat` determinism test| In progress |
-| 3 | **v0.3** — `temporal_attestation` schema, TEE attestation format,
-      protocol proposal for UPI ReqPay message| Planned |
-| 4 | **v1.0** — Android/Kotlin heartbeat module, 20+ scenarios,
-      production-ready API | Drafting |
+| 2 | **v0.2** — Community scenarios (12+), configurable profiles,`--repeat` determinism test| In progress |
+| 3 | **v0.3** — `temporal_attestation` schema, TEE attestation format, protocol proposal for UPI ReqPay message| Planned |
+| 4 | **v1.0** — Android/Kotlin heartbeat module, 20+ scenarios, production-ready API | Drafting |
+
 ## Protocol Extension (v0.3)
 A `temporal_attestation` field for the UPI ReqPay message.Schema, TEE signature format, and verification rules will be documented here at v0.3.   
+
 ## Why PLC?
 A PLC is the most safety-critical software running on Earth. It controls reactors, trains, power grids. Its design philosophy is:
 1. **Deterministic** — same input, same output, every time
