@@ -77,7 +77,7 @@ UPI fraud detection violates all four. fraud-watchdog restores them.
 ### Why TEE? (The Hard Guarantee)
 
 | PLC concept                        | Phone equivalent                | Why it's hard                                  |
-|------------------------------------|-----------------------------------------|--------------------------------------- |
+|------------------------------------|---------------------------------|------------------------------------------------|
 | Interlock relay (physical)         | TEE hardware isolation          | App cannot bypass — no software path around it |
 | Hard fault → immediate trip        | `verdict: TRIP` → NPCI rejects  | Binary, not a score                            |
 | Interlock runs below PLC software  | Engine runs below the app       | Malware in app layer is irrelevant             |
