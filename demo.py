@@ -11,9 +11,11 @@ from datetime import datetime, timedelta
 
 from watchdog import TransactionWatchdog, TxnContext, UserProfile
 from scenarios import SCENARIOS
+import os
+if os.name == "nt":
+    os.system("")  # enables ANSI color in Windows console 
 
-
-def run_scenario(key: str):
+def run_scenario(key: str, num: int = 1):
     s = SCENARIOS[key]
     base_time = datetime(2026, 10, 1, s["hour"], 0, 0)
 
@@ -46,8 +48,12 @@ def run_scenario(key: str):
     # --- Output ---
     icon = "✅" if passed else "🚫"
     status = "PASS" if passed else "TRIPPED"
+
+    color = "\033[92m" if passed else "\033[91m" 
+    reset = "\033[0m"
+    
     print(f"\n{'─' * 55}")
-    print(f"  {icon} {s['name']}")
+    print(f" {color} {num}. {color}{s['name']} [{status}]{reset}")
     print(f"  {'─' * 40}")
     print(f"  {s['description']}")
     print(f"  Result:  {status}")
@@ -66,7 +72,7 @@ def run_scenario(key: str):
                 print(f"  ⚠️  Missing expected fault: {fault}")
 
     wd.reset()
-    return passed
+    return reason, passed
 
 
 def main():
@@ -87,8 +93,9 @@ def main():
             return
         run_scenario(args.scenario)
     else:
-        for key in SCENARIOS:
-            run_scenario(key)
+        run_results = {}
+        for i, key in enumerate(SCENARIOS, 1):
+            run_results[key] = run_scenario(key, i)
 
     print(f"\n{'=' * 55}")
     print(f"  {len(SCENARIOS)} scenarios evaluated.")
