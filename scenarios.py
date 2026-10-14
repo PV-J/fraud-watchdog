@@ -8,6 +8,7 @@ SCENARIOS = {
 
     "digital_arrest": {
         "name": "Digital Arrest Scam",
+        "axis": "VELOCITY",
         "description": "Caller claims CBI/police, demands immediate transfer. User panics and confirms in 4 seconds.",
         "events": [
             ("open_app",       0),
@@ -28,6 +29,7 @@ SCENARIOS = {
 
     "legit_payment": {
         "name": "Legit Payment to Trusted Contact",
+        "axis": "NONE",
         "description": "Normal payment to a shop. User takes their time. No scam alerts.",
         "events": [
             ("open_app",       0),
@@ -48,6 +50,7 @@ SCENARIOS = {
 
     "overlay_attack": {
         "name": "Malware Overlay During Payment",
+        "axis": "VELOCITY",
         "description": "Malware creates a fake PIN entry overlay. User types PIN into the overlay, not the real app.",
         "events": [
             ("open_app",       0),
@@ -68,6 +71,7 @@ SCENARIOS = {
 
     "late_night_rush": {
         "name": "3 AM Transaction (Outside Normal Hours)",
+        "axis": "CONTEXT",
         "description": "User (or attacker with phone) attempts transfer at 3 AM. Outside learned normal hours (8 AM – 10 PM).",
         "events": [
             ("open_app",       0),
@@ -88,6 +92,7 @@ SCENARIOS = {
 
     "otp_phishing": {
         "name": "OTP Phishing — Fast Sequence After SMS",
+        "axis": "VELOCITY",
         "description": "User receives fake 'bank verification' SMS, immediately opens app and enters OTP. 2 min after scam SMS.",
         "events": [
             ("open_app",       0),
@@ -108,6 +113,7 @@ SCENARIOS = {
 
     "velocity_burst": {
         "name": "Rapid Fire Transfers (Mule Account Pattern)",
+        "axis": "VELOCITY",
         "description": "7th transaction in the same hour. Classic mule account behaviour.",
         "events": [
             ("open_app",       0),
@@ -129,6 +135,7 @@ SCENARIOS = {
 
     "screen_off_replay": {
         "name": "Screen-Off Replay Attack",
+        "axis": "SEQUENCE",
         "description": "Attacker replays a captured transaction while screen is off (phone in pocket).",
         "events": [
             ("open_app",       0),
@@ -149,6 +156,7 @@ SCENARIOS = {
 
     "elderly_user_slow": {
         "name": "Elderly User — Slow but Legit",
+        "axis": "NONE",
         "description": "65-year-old takes 45 seconds to select a contact. All dwells are long. Should PASS.",
         "events": [
             ("open_app",       0),
