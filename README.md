@@ -132,9 +132,13 @@ All 8 scenarios run. Output shows the rule that fired and the verdict.
 | 4 | **v1.0** — Android/Kotlin heartbeat module, 20+ scenarios, production-ready API | Drafting |
 
 ## Protocol Extension (v0.3)
-A `temporal_attestation` field for the UPI ReqPay message.Schema, TEE signature format, and verification rules will be documented here at v0.3.   
+A `temporal_attestation` field for the UPI ReqPay message.Schema, TEE signature format, and verification rules will be documented here at v0.3.  
 
 *Solo project. No team. No funding. No VC. Just an engineer who got tired of reading fraud news.*
+
+## Demo
+
+<video src="demo_video.mp4" controls width="100%"></video> 
 
 ##
 Auth: PV-J/30/9/26
