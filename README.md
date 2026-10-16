@@ -138,8 +138,7 @@ A `temporal_attestation` field for the UPI ReqPay message.Schema, TEE signature 
 
 ## Demo
 
-[Watch the 3-minute demo](https://www.youtube.com/watch?v=abc123xyz)
-[watch the 3-minute demo(https://youtu.be/AGleG9RFQz0)
+[watch the 3-minute demo](https://youtu.be/AGleG9RFQz0)
 
 ##
 Auth: PV-J/30/9/26
