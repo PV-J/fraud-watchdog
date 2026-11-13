@@ -3,6 +3,15 @@ fraud-watchdog — PLC-style fail-safe temporal gate for payments.
 Default state: BLOCKED. Must pass ALL checks to proceed.
 Auth:PV-J 30/9/26
 Modified on 1/10/26
+
+# ── Phase 3 TODO ──────────────────────────────────────────────
+# [ ] NETWORK_VELOCITY_WATCHDOG: trip if ≥N linked UPI IDs each
+#     forward within T sec of receipt. Needs multi-account graph
+#     input (current state machine is single-account only).
+# [ ] confirm → open_app min-dwell: currently unchecked; a 0s
+#     re-open passes silently. Add to MIN_DWELL or new rule.
+# ──────────────────────────────────────────────────────────────  
+
 """
 
 from dataclasses import dataclass, field
@@ -114,12 +123,15 @@ class TransactionWatchdog:
 
     def _check_action_sequence(self, ctx: TxnContext) -> bool:
         actual_order = [e[0] for e in ctx.events]
+        cycle_len = len(self.EXPECTED_SEQUENCE)
 
-        # Check order
-        if actual_order != self.EXPECTED_SEQUENCE:
-            self._trip("SEQUENCE_VIOLATION",
-                       f"Wrong order: {actual_order}")
-            return False
+        # Check order — chunk into cycles
+        for i in range(0, len(actual_order), cycle_len):
+            chunk = actual_order[i:i + cycle_len]
+            if chunk != self.EXPECTED_SEQUENCE:
+                self._trip("SEQUENCE_VIOLATION",
+                        f"Wrong order: {chunk}")
+                return False
 
         # Check dwell times between consecutive steps
         for i in range(len(ctx.events) - 1):
@@ -127,9 +139,10 @@ class TransactionWatchdog:
             dwell = (ctx.events[i + 1][1] - ctx.events[i][1]).total_seconds()
             if action in self.MIN_DWELL and dwell < self.MIN_DWELL[action]:
                 self._trip("DWELL_TIME_VIOLATION",
-                           f"{action} → next in {dwell:.1f}s (min {self.MIN_DWELL[action]}s)")
+                        f"{action} → next in {dwell:.1f}s (min {self.MIN_DWELL[action]}s)")
                 return False
-        return True
+        return True   
+
 
     # --- HEARTBEAT ---
 
@@ -156,6 +169,7 @@ class TransactionWatchdog:
         self.state = "EVALUATING"
         self.tripped_checks = []
         self.fault_reason = None
+        self.check_results = {}  # ← ADD THIS
 
         checks = [
             ("velocity",       self._check_velocity),
@@ -168,18 +182,26 @@ class TransactionWatchdog:
 
         all_passed = True
         for name, fn in checks:
-            if not fn(ctx):
+            before = len(self.tripped_checks)
+            fn(ctx)
+            if len(self.tripped_checks) > before:
                 all_passed = False
+                self.check_results[name] = self.tripped_checks[-1]  # fault msg
+            else:
+                self.check_results[name] = "OK"
+
                 # Continue checking all (report all faults, like a PLC fault summary)
 
         if all_passed:
             self.state = "AUTHORIZED"
-            return True, "All watchdogs passed. Transaction authorized."
+            return True, "[VELOCITY] OK  [SEQUENCE] OK  [CONTEXT] OK  — Transaction authorized."
         else:
             self.state = "TRIPPED"
             reasons = "; ".join(self.tripped_checks)
             self.fault_reason = reasons
             return False, f"BLOCKED: {reasons}"
+            
+    
 
     # --- INTERNAL ---
 
