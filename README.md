@@ -127,7 +127,7 @@ All 8 scenarios run. Output shows the rule that fired and the verdict.
 | Phase | Focus | Status |
 |-------|-------|--------|
 | 1 | **v0.1** — Core watchdog, 8 scenarios, CLI demo, pytest suite| Done |
-| 2 | **v0.2** — Community scenarios (12+), configurable profiles,`--repeat` determinism test| In progress |
+| 2 | **v0.2** — Community scenarios (12+), configurable profiles,`--repeat` determinism test| Done |
 | 3 | **v0.3** — `temporal_attestation` schema, TEE attestation format, protocol proposal for UPI ReqPay message| Planned |
 | 4 | **v1.0** — Android/Kotlin heartbeat module, 20+ scenarios, production-ready API | Drafting |
 
