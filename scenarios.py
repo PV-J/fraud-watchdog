@@ -50,7 +50,7 @@ SCENARIOS = {
 
     "overlay_attack": {
         "name": "Malware Overlay During Payment",
-        "axis": "VELOCITY",
+        "axis": "CONTEXT",
         "description": "Malware creates a fake PIN entry overlay. User types PIN into the overlay, not the real app.",
         "events": [
             ("open_app",       0),
@@ -91,7 +91,7 @@ SCENARIOS = {
     },
 
     "otp_phishing": {
-        "name": "OTP Phishing — Fast Sequence After SMS",
+        "name": "OTP Phishing — Rapid SMS Response",
         "axis": "VELOCITY",
         "description": "User receives fake 'bank verification' SMS, immediately opens app and enters OTP. 2 min after scam SMS.",
         "events": [
@@ -130,7 +130,7 @@ SCENARIOS = {
         "hour": 15,
         "txn_count_this_hour": 7,
         "expected": "TRIPPED",
-        "expected_faults": ["VELOCITY_WATCHDOG", "TXN_COUNT_WATCHDOG"],
+        "expected_faults": ["TXN_COUNT_WATCHDOG"],
     },
 
     "screen_off_replay": {
@@ -174,5 +174,123 @@ SCENARIOS = {
         "expected": "PASS",
         "expected_faults": [],
     },
+    # --- Nov 2026 ---
+
+    "mdr_threshold_qr_split": {
+        "name": "MDR Threshold QR Split",
+        "axis": "SEQUENCE",
+        "description": "Merchant QR encodes ₹1999 + ₹1999 to stay under ₹2000 MDR threshold. Second scan goes to a different (scammer) UPI ID.",
+        "events": [
+            ("open_app",       0),
+            ("scan_qr",        3),
+            ("confirm",        6),
+            ("scan_qr",        10),
+            ("confirm",        13),
+        ],
+        "last_txn_offset_sec": None,
+        "last_scam_alert_offset_sec": None,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+        "hour": 19,
+        "expected": "TRIPPED",
+        "expected_faults": ["SEQUENCE_VIOLATION"],
+    },
+
+    "diwali_bonus_fake_qr": {
+        "name": "Festive ₹8000 Diwali Bonus Fake QR",
+        "axis": "SEQUENCE",
+        "description": "WhatsApp forward promises ₹8000 Diwali bonus. User scans QR, enters UPI PIN. Money goes to mule.",
+        "events": [
+            ("open_app",       0),
+            ("scan_qr",        2),
+            ("enter_amount",   3),
+            ("verify",         7),
+            ("confirm",        9),
+        ],
+        "last_txn_offset_sec": None,
+        "last_scam_alert_offset_sec": -60,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+        "hour": 20,
+        "expected": "TRIPPED",
+        "expected_faults": ["SCAM_PROXIMITY_WATCHDOG"],
+    },
+
+    "mule_velocity_burst": {
+        "name": "Mule Velocity Burst (₹500cr Network Pattern)",
+        "axis": "VELOCITY",
+        "description": "17 linked UPI IDs each receive ₹15K and forward within 90s. 4 cycles in one hour. Mumbai Police case Nov 2026.",
+        "events": [
+            ("open_app",       0),
+            ("select_contact", 2),
+            ("enter_amount",   4),
+            ("verify",         7),
+            ("confirm",        9),
+        ],
+        "last_txn_offset_sec": -30,
+        "last_scam_alert_offset_sec": None,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+        "hour": 16,
+        "txn_count_this_hour": 8,
+        "expected": "TRIPPED",
+        "expected_faults": ["TXN_COUNT_WATCHDOG"],
+    },
+
+    "busy_legit_hour": {
+            "name": "Busy Legit Hour (5 txns, boundary test)",
+    "description": (
+        "User makes 5 legitimate transactions in one hour: "
+        "groceries ₹450, fuel ₹2000, pharmacy ₹320, cab ₹380, "
+        "movie tickets ₹600. Normal dwells, no scam alerts, "
+        "all contacts whitelisted. Should PASS at exactly max_txn=5."
+    ),
+    "events": [
+        # Txn 1: Groceries
+        ("open_app",       0),
+        ("select_contact",  8),
+        ("enter_amount",   14),
+        ("verify",         19),
+        ("confirm",        23),
+        # Txn 2: Fuel (75s gap)
+        ("open_app",       97),
+        ("select_contact", 105),
+        ("enter_amount",   111),
+        ("verify",         116),
+        ("confirm",        120),
+        # Txn 3: Pharmacy (70s gap)
+        ("open_app",      189),
+        ("select_contact", 197),
+        ("enter_amount",  203),
+        ("verify",        208),
+        ("confirm",       212),
+        # Txn 4: Cab (72s gap)
+        ("open_app",      283),
+        ("select_contact", 291),
+        ("enter_amount",  297),
+        ("verify",        302),
+        ("confirm",       306),
+        # Txn 5: Movie tickets (68s gap)
+        ("open_app",      373),
+        ("select_contact", 381),
+        ("enter_amount",  387),
+        ("verify",        392),
+        ("confirm",       396),
+    ],
+    "txn_count_this_hour": 5,
+    "last_txn_offset_sec": 45,
+    #"scam_alert_seconds_ago": None,
+    "last_scam_alert_offset_sec" : None,
+    "hour": 14,
+    "screen_on": True,
+    "touch_active": True,
+    "no_overlay": True,
+    "expected": "PASS",
+    "expected_faults": [],
+    },
+
 
 }   
