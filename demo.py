@@ -15,6 +15,8 @@ import os
 if os.name == "nt":
     os.system("")  # enables ANSI color in Windows console 
 
+
+
 def run_scenario(key: str, num: int = 1):
     s = SCENARIOS[key]
     base_time = datetime(2026, 10, 1, s["hour"], 0, 0)
@@ -53,12 +55,21 @@ def run_scenario(key: str, num: int = 1):
     reset = "\033[0m"
     
     print(f"\n{'─' * 55}")
-    print(f" {color} {num}. {color}{s['name']} [{status}]{reset}")
+    
+    print(f" {color} {num}. {color}{s['name']} [{status}]{reset}")   
+    # print(f"  {num} {s['name']} [{status}] ")
     print(f"  {'─' * 40}")
     print(f"  {s['description']}")
     print(f"  Result:  {status}")
     print(f"  Reason:  {reason}")
 
+    # Per-axis breakdown
+    for axis, result in wd.check_results.items():
+        mark = "✓" if result == "OK" else "✗"
+        c = "\033[92m" if result == "OK" else "\033[91m"
+        print(f"  {c}{mark} {axis:<16} {result}{reset}")
+
+   
     # Verify expected outcome
     expected = s["expected"]
     actual = "PASS" if passed else "TRIPPED"
@@ -94,9 +105,11 @@ def main():
         run_scenario(args.scenario)
     else:
         run_results = {}
+        # for key in SCENARIOS:
+        #   run_scenario(key)
         for i, key in enumerate(SCENARIOS, 1):
             run_results[key] = run_scenario(key, i)
-
+        
     print(f"\n{'=' * 55}")
     print(f"  {len(SCENARIOS)} scenarios evaluated.")
     print(f"  State machine: SAFE → EVALUATING → TRIPPED/AUTHORIZED → SAFE")
