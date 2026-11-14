@@ -124,12 +124,13 @@ All 8 scenarios run. Output shows the rule that fired and the verdict.
 -  License: Apache 2.0
 
 ## Roadmap
-| Phase | Focus | Status |
-|-------|-------|--------|
-| 1 | **v0.1** — Core watchdog, 8 scenarios, CLI demo, pytest suite| Done |
-| 2 | **v0.2** — Community scenarios (12+), configurable profiles,`--repeat` determinism test| Done |
-| 3 | **v0.3** — `temporal_attestation` schema, TEE attestation format, protocol proposal for UPI ReqPay message| Planned |
-| 4 | **v1.0** — Android/Kotlin heartbeat module, 20+ scenarios, production-ready API | Drafting |
+| Version | Scope | Status |
+|---------|-------|--------|
+| v0.1 | 8 baseline scenarios, 6 rules, state machine | ✅ Done |
+| v0.2 | 12 scenarios, sequence chunking, boundary test | ✅ Done |
+| v0.3 | NETWORK_VELOCITY_WATCHDOG, confirm dwell, 14 scenarios | ✅ Done |
+| v0.4 | Fuzz testing, DATA_SOURCES.md, soft warning layer, demo recording | ⬜ Next |
+| v0.5 | Temporal attestation schema, TEE attestation format, UPI ReqPay protocol proposal | 📋 Planned | 
 
 ## Protocol Extension (v0.3)
 A `temporal_attestation` field for the UPI ReqPay message.Schema, TEE signature format, and verification rules will be documented here at v0.3.
