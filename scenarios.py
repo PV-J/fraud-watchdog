@@ -292,5 +292,80 @@ SCENARIOS = {
     "expected_faults": [],
     },
 
+# Phase 3 network velocity watchdog scenario
+
+    "mule_network_velocity": {
+        "name": "Mule Network Velocity (17-ID Relay)",
+        "description": (
+            "17 linked UPI IDs each receive ₹15K and forward within 90s. "
+            "14 of 17 forward in <90s. Classic mule relay cluster."
+        ),
+        "expected": "TRIPPED",
+        "expected_faults": ["NETWORK_VELOCITY_WATCHDOG"],
+        "events": [
+            ("open_app", 0), ("select_contact", 8), ("enter_amount", 14),
+            ("verify", 19), ("confirm", 23),
+        ],
+        "hour": 15,
+        "txn_count_this_hour": 2,
+        "last_txn_offset_sec": -100,
+        "last_scam_alert_offset_sec": None,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+        "linked_txns": [
+            ("mule01@upi", 0,   45),
+            ("mule02@upi", 10,  55),
+            ("mule03@upi", 20,  60),
+            ("mule04@upi", 30,  75),
+            ("mule05@upi", 40,  80),
+            ("mule06@upi", 50,  90),
+            ("mule07@upi", 60,  100),
+            ("mule08@upi", 70,  110),
+            ("mule09@upi", 80,  120),
+            ("mule10@upi", 90,  130),
+            ("mule11@upi", 100, 140),
+            ("mule12@upi", 110, 150),
+            ("mule13@upi", 120, 200),  # 80s gap — still <90
+            ("mule14@upi", 130, 210),  # 80s gap — still <90
+            ("mule15@upi", 140, 350),  # 210s — SLOW, doesn't count
+            ("mule16@upi", 150, 400),  # 250s — SLOW
+            ("mule17@upi", 160, 500),  # 340s — SLOW
+        ],
+    },
+
+    "rapid_reopen_replay": {
+        "name": "Rapid Re-open (5s after confirm)",
+        "description": (
+            "Attacker (or buggy automation) re-opens the payment flow "
+            "5 seconds after the previous confirm. Well under the 30s "
+            "minimum inter-transaction cooldown."
+        ),
+        "expected": "TRIPPED",
+        "expected_faults": ["DWELL_TIME_VIOLATION"],
+        "events": [
+            ("open_app",       0),
+            ("select_contact",  8),
+            ("enter_amount",   14),
+            ("verify",         19),
+            ("confirm",        23),
+            # Re-open after only 5s (min is 30s)
+            ("open_app",       28),
+            ("select_contact", 36),
+            ("enter_amount",   42),
+            ("verify",         47),
+            ("confirm",        51),
+        ],
+        "hour": 11,
+        "txn_count_this_hour": 2,
+        "last_txn_offset_sec": -100,
+        "last_scam_alert_offset_sec": None,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+    },
+
+
+
 
 }   
