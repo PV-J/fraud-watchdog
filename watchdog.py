@@ -4,14 +4,6 @@ Default state: BLOCKED. Must pass ALL checks to proceed.
 Auth:PV-J 30/9/26
 Modified on 1/10/26
 
-# ── Phase 3 TODO ──────────────────────────────────────────────
-# [ ] NETWORK_VELOCITY_WATCHDOG: trip if ≥N linked UPI IDs each
-#     forward within T sec of receipt. Needs multi-account graph
-#     input (current state machine is single-account only).
-# [ ] confirm → open_app min-dwell: currently unchecked; a 0s
-#     re-open passes silently. Add to MIN_DWELL or new rule.
-# ──────────────────────────────────────────────────────────────  
-
 """
 
 from dataclasses import dataclass, field
@@ -47,7 +39,7 @@ class TxnContext:
     no_overlay: bool = True
     target_vpa: str = ""
     txn_count_this_hour: int = 1
-
+    linked_txns: list[tuple[str, float, float]] | None = None # Phase 3 network velocity watchdog
 
 class TransactionWatchdog:
     """
@@ -63,8 +55,11 @@ class TransactionWatchdog:
         "select_contact": 3,
         "enter_amount": 5,
         "verify": 2,
+        "confirm": 30,
     }
     EXPECTED_SEQUENCE = ["open_app", "select_contact", "enter_amount", "verify", "confirm"]
+
+    # Phase 3 Network velocity watchdog 
 
     def __init__(self, user: UserProfile, rules: dict = None):
         if rules is None:
@@ -82,6 +77,8 @@ class TransactionWatchdog:
         self.NORMAL_HOURS = set(range(w["normal_hours"][0], w["normal_hours"][1]))
         self.MIN_DWELL = rules["dwell_min"]
         self.EXPECTED_SEQUENCE = rules["expected_sequence"]
+        self.NETWORK_MIN_LINKED = w["network_min_linked"]
+        self.NETWORK_FORWARD_MAX_SEC = w["network_forward_max_sec"]
 
     # --- WATCHDOG TIMERS ---
 
@@ -134,15 +131,19 @@ class TransactionWatchdog:
                 return False
 
         # Check dwell times between consecutive steps
+        
+        # print(f"  [DEBUG] events count = {len(ctx.events)}") 
         for i in range(len(ctx.events) - 1):
             action = ctx.events[i][0]
             dwell = (ctx.events[i + 1][1] - ctx.events[i][1]).total_seconds()
+            #if action == "confirm":
+            #    print(f"  DEBUG: confirm → next, dwell={dwell}s, min={self.MIN_DWELL.get('confirm')}")
             if action in self.MIN_DWELL and dwell < self.MIN_DWELL[action]:
                 self._trip("DWELL_TIME_VIOLATION",
                         f"{action} → next in {dwell:.1f}s (min {self.MIN_DWELL[action]}s)")
-                return False
-        return True   
-
+                return False     
+        return True
+    
 
     # --- HEARTBEAT ---
 
@@ -159,6 +160,35 @@ class TransactionWatchdog:
             return False
         return True
 
+
+    
+    # New field in TxnContext (or a parallel dataclass):
+    # linked_txns: list of (upi_id, receipt_sec, forward_sec)
+    # e.g., [("A@upi", 0, 45), ("B@upi", 10, 55), ("C@upi", 20, 70), ...]
+
+    # Rule logic 
+
+    def _check_network_velocity(self, ctx: TxnContext) -> bool:
+        if not ctx.linked_txns:
+            return True  # no linkage data → skip
+
+        # Count accounts that forwarded within threshold of receipt
+        fast_forwarders = sum(
+            1 for _, receipt, forward in ctx.linked_txns
+            if (forward - receipt) <= self.NETWORK_FORWARD_MAX_SEC
+        )
+
+        if fast_forwarders >= self.NETWORK_MIN_LINKED:
+            self._trip(
+                "NETWORK_VELOCITY_WATCHDOG",
+                f"{fast_forwarders} linked IDs forwarded within "
+                f"{self.NETWORK_FORWARD_MAX_SEC}s of receipt (min {self.NETWORK_MIN_LINKED})"
+            )
+            return False
+        return True
+
+    
+    
     # --- MAIN GATE (AND logic, like a PLC rung) ---
 
     def evaluate(self, ctx: TxnContext) -> Tuple[bool, str]:
@@ -178,6 +208,7 @@ class TransactionWatchdog:
             ("txn_count",      self._check_txn_count),
             ("sequence",       self._check_action_sequence),
             ("heartbeat",      self._check_heartbeat),
+            ("network_velocity", self._check_network_velocity),
         ]
 
         all_passed = True
