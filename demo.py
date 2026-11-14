@@ -43,6 +43,7 @@ def run_scenario(key: str, num: int = 1):
         no_overlay=s["no_overlay"],
         target_vpa="test@upi",
         txn_count_this_hour=s.get("txn_count_this_hour", 1),
+        linked_txns=s.get("linked_txns", None),      # Phase 3 network velocity watchdog
     )
 
     passed, reason = wd.evaluate(ctx)
@@ -93,7 +94,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 55)
-    print("  FRAUD-WATCHDOG v0.1")
+    print("  FRAUD-WATCHDOG v0.2")
     print("  PLC-Style Temporal Gate for Payments")
     print("=" * 55)
 
