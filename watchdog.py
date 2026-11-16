@@ -69,16 +69,23 @@ class TransactionWatchdog:
         self.fault_reason = None
         self.tripped_checks = []
 
-        # Load from YAML instead of hardcoding
         w = rules["watchdog"]
+
+        # --- Validate ---
+        nh = w["normal_hours"]
+        if not isinstance(nh, (list, tuple)) or len(nh) != 2:
+            raise ValueError(f"normal_hours must be [start, end], got: {nh!r}")
+        if not (isinstance(nh[0], int) and isinstance(nh[1], int)):
+            raise ValueError(f"normal_hours must be integers, got: {nh!r}")
+
         self.MIN_SECONDS_BETWEEN_TXNS = w["min_seconds_between_txns"]
         self.MIN_SCAM_PROXIMITY = w["min_scam_proximity_sec"]
         self.MAX_TXN_PER_HOUR = w["max_txn_per_hour"]
-        self.NORMAL_HOURS = set(range(w["normal_hours"][0], w["normal_hours"][1]))
+        self.NORMAL_HOURS = set(range(nh[0], nh[1]))
         self.MIN_DWELL = rules["dwell_min"]
         self.EXPECTED_SEQUENCE = rules["expected_sequence"]
         self.NETWORK_MIN_LINKED = w["network_min_linked"]
-        self.NETWORK_FORWARD_MAX_SEC = w["network_forward_max_sec"]
+        self.NETWORK_FORWARD_MAX_SEC = w["network_forward_max_sec"] 
 
     # --- WATCHDOG TIMERS ---
 
@@ -118,7 +125,9 @@ class TransactionWatchdog:
 
     # --- SEQUENCE INTERLOCK ---
 
-    def _check_action_sequence(self, ctx: TxnContext) -> bool:
+    def _check_action_sequence(self, ctx: TxnContext) -> bool: 
+        if not ctx.events:
+            return True  # no events → nothing to sequence-check
         actual_order = [e[0] for e in ctx.events]
         cycle_len = len(self.EXPECTED_SEQUENCE)
 
