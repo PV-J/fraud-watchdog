@@ -129,7 +129,7 @@ All 8 scenarios run. Output shows the rule that fired and the verdict.
 | v0.1 | 8 baseline scenarios, 6 rules, state machine | ✅ Done |
 | v0.2 | 12 scenarios, sequence chunking, boundary test | ✅ Done |
 | v0.3 | NETWORK_VELOCITY_WATCHDOG, confirm dwell, 14 scenarios | ✅ Done |
-| v0.4 | Fuzz testing, DATA_SOURCES.md, soft warning layer, demo recording | ⬜ Next |
+| v0.4 | Fuzz testing, DATA_SOURCES.md, soft warning layer, demo recording | ⬜ Ongoing |
 | v0.5 | Temporal attestation schema, TEE attestation format, UPI ReqPay protocol proposal | 📋 Planned | 
 
 ## Protocol Extension (v0.3)
