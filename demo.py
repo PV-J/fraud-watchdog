@@ -94,7 +94,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 55)
-    print("  FRAUD-WATCHDOG v0.2")
+    print("  FRAUD-WATCHDOG v0.4")
     print("  PLC-Style Temporal Gate for Payments")
     print("=" * 55)
 
