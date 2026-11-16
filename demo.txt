@@ -1,0 +1,66 @@
+=======================================================
+  FRAUD-WATCHDOG v0.1
+  PLC-Style Temporal Gate for Payments
+=======================================================
+
+───────────────────────────────────────────────────────
+  🚫 Digital Arrest Scam
+  ────────────────────────────────────────
+  Caller claims CBI/police, demands immediate transfer. User panics and confirms in 4 seconds.
+  Result:  TRIPPED
+  Reason:  BLOCKED: [VELOCITY_WATCHDOG] Only 14s since last txn (min 30s); [SCAM_PROXIMITY_WATCHDOG] Payment within 124s of scam alert — HARD BLOCK; [DWELL_TIME_VIOLATION] open_app → next in 1.0s (min 2s)
+
+───────────────────────────────────────────────────────
+  ✅ Legit Payment to Trusted Contact
+  ────────────────────────────────────────
+  Normal payment to a shop. User takes their time. No scam alerts.
+  Result:  PASS
+  Reason:  All watchdogs passed. Transaction authorized.
+
+───────────────────────────────────────────────────────
+  🚫 Malware Overlay During Payment
+  ────────────────────────────────────────
+  Malware creates a fake PIN entry overlay. User types PIN into the overlay, not the real app.
+  Result:  TRIPPED
+  Reason:  BLOCKED: [HEARTBEAT_LOSS] Presence signal lost: overlay_detected
+
+───────────────────────────────────────────────────────
+  🚫 3 AM Transaction (Outside Normal Hours)
+  ────────────────────────────────────────
+  User (or attacker with phone) attempts transfer at 3 AM. Outside learned normal hours (8 AM – 10 PM).
+  Result:  TRIPPED
+  Reason:  BLOCKED: [TIME_OF_DAY_WATCHDOG] Unusual hour: 3:00
+
+───────────────────────────────────────────────────────
+  🚫 OTP Phishing — Fast Sequence After SMS
+  ────────────────────────────────────────
+  User receives fake 'bank verification' SMS, immediately opens app and enters OTP. 2 min after scam SMS.
+  Result:  TRIPPED
+  Reason:  BLOCKED: [SCAM_PROXIMITY_WATCHDOG] Payment within 116s of scam alert — HARD BLOCK; [DWELL_TIME_VIOLATION] open_app → next in 1.0s (min 2s)
+
+───────────────────────────────────────────────────────
+  🚫 Rapid Fire Transfers (Mule Account Pattern)
+  ────────────────────────────────────────
+  7th transaction in the same hour. Classic mule account behaviour.
+  Result:  TRIPPED
+  Reason:  BLOCKED: [TXN_COUNT_WATCHDOG] 7 txns this hour (max 5)
+  ⚠️  Missing expected fault: VELOCITY_WATCHDOG
+
+───────────────────────────────────────────────────────
+  🚫 Screen-Off Replay Attack
+  ────────────────────────────────────────
+  Attacker replays a captured transaction while screen is off (phone in pocket).
+  Result:  TRIPPED
+  Reason:  BLOCKED: [DWELL_TIME_VIOLATION] enter_amount → next in 4.0s (min 5s); [HEARTBEAT_LOSS] Presence signal lost: screen_off, no_touch
+
+───────────────────────────────────────────────────────
+  ✅ Elderly User — Slow but Legit
+  ────────────────────────────────────────
+  65-year-old takes 45 seconds to select a contact. All dwells are long. Should PASS.
+  Result:  PASS
+  Reason:  All watchdogs passed. Transaction authorized.
+
+=======================================================
+  8 scenarios evaluated.
+  State machine: SAFE → EVALUATING → TRIPPED/AUTHORIZED → SAFE
+=======================================================
