@@ -15,7 +15,8 @@ A PLC is the most safety-critical software running on Earth. It controls reactor
 
 UPI fraud detection violates all four. fraud-watchdog restores them.
 
-## Architecture  
+## Architecture 
+For the internal software layer breakdown, see [architecture.md](architecture.md)
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  UPI APP (Normal World — can be compromised)                │
