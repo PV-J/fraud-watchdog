@@ -68,24 +68,45 @@ class TransactionWatchdog:
         self.state = "SAFE"
         self.fault_reason = None
         self.tripped_checks = []
+        self.warnings = []
 
         w = rules["watchdog"]
 
-        # --- Validate ---
+        # Validate normal_hours
         nh = w["normal_hours"]
         if not isinstance(nh, (list, tuple)) or len(nh) != 2:
             raise ValueError(f"normal_hours must be [start, end], got: {nh!r}")
-        if not (isinstance(nh[0], int) and isinstance(nh[1], int)):
-            raise ValueError(f"normal_hours must be integers, got: {nh!r}")
 
+        # Validate trip_normal_hours
+        tnh = w["trip_normal_hours"]
+        if not isinstance(tnh, (list, tuple)) or len(tnh) != 2:
+            raise ValueError(f"trip_normal_hours must be [start, end], got: {tnh!r}")
+        if not (isinstance(tnh[0], int) and isinstance(tnh[1], int)):
+            raise ValueError(f"trip_normal_hours must be integers, got: {tnh!r}")
+        if tnh[1] - tnh[0] > 48:
+            raise ValueError(f"trip_normal_hours range too wide: {tnh!r}")
+
+
+        # WARN thresholds (suspicious → payment proceeds with friction)
         self.MIN_SECONDS_BETWEEN_TXNS = w["min_seconds_between_txns"]
         self.MIN_SCAM_PROXIMITY = w["min_scam_proximity_sec"]
         self.MAX_TXN_PER_HOUR = w["max_txn_per_hour"]
         self.NORMAL_HOURS = set(range(nh[0], nh[1]))
+        self.NETWORK_MIN_LINKED = w["network_min_linked"]
+        self.NETWORK_FORWARD_MAX_SEC = w["network_forward_max_sec"]
+
+        # TRIP thresholds (confirmed threat → hard block)
+        self.TRIP_SECONDS_BETWEEN_TXNS = w["trip_seconds_between_txns"]
+        self.TRIP_SCAM_PROXIMITY = w["trip_scam_proximity_sec"]
+        self.TRIP_MAX_TXN_PER_HOUR = w["trip_max_txn_per_hour"]
+        self.TRIP_NORMAL_HOURS = set(range(w["trip_normal_hours"][0], w["trip_normal_hours"][1]))
+        self.TRIP_NETWORK_MIN_LINKED = w["trip_network_min_linked"]
+        self.TRIP_NETWORK_FORWARD_MAX_SEC = w["trip_network_forward_max_sec"]
+
+        # Dwell + sequence (binary — no soft/hard distinction)
         self.MIN_DWELL = rules["dwell_min"]
         self.EXPECTED_SEQUENCE = rules["expected_sequence"]
-        self.NETWORK_MIN_LINKED = w["network_min_linked"]
-        self.NETWORK_FORWARD_MAX_SEC = w["network_forward_max_sec"] 
+ 
 
     # --- WATCHDOG TIMERS ---
 
@@ -93,35 +114,51 @@ class TransactionWatchdog:
         if ctx.last_txn_time is None:
             return True
         delta = (ctx.now - ctx.last_txn_time).total_seconds()
-        if delta < self.MIN_SECONDS_BETWEEN_TXNS:
+        if delta < self.TRIP_SECONDS_BETWEEN_TXNS:
             self._trip("VELOCITY_WATCHDOG",
-                       f"Only {delta:.0f}s since last txn (min {self.MIN_SECONDS_BETWEEN_TXNS}s)")
+                    f"Only {delta:.0f}s since last txn (trip < {self.TRIP_SECONDS_BETWEEN_TXNS}s)")
             return False
+        elif delta < self.MIN_SECONDS_BETWEEN_TXNS:
+            self._warn("VELOCITY_WATCHDOG",
+                    f"Only {delta:.0f}s since last txn (warn < {self.MIN_SECONDS_BETWEEN_TXNS}s)")
         return True
 
+
     def _check_time_of_day(self, ctx: TxnContext) -> bool:
-        if ctx.now.hour not in self.NORMAL_HOURS:
+        if ctx.now.hour not in self.TRIP_NORMAL_HOURS:
             self._trip("TIME_OF_DAY_WATCHDOG",
-                   f"Unusual hour: {ctx.now.hour}:00")
+                    f"Unusual hour: {ctx.now.hour}:00 (outside trip window)")
             return False
+        elif ctx.now.hour not in self.NORMAL_HOURS:
+            self._warn("TIME_OF_DAY_WATCHDOG",
+                    f"Unusual hour: {ctx.now.hour}:00 (outside normal window)")
         return True
+
 
     def _check_scam_proximity(self, ctx: TxnContext) -> bool:
         if ctx.last_scam_alert_time is None:
             return True
         delta = (ctx.now - ctx.last_scam_alert_time).total_seconds()
-        if delta < self.MIN_SCAM_PROXIMITY:
+        if delta < self.TRIP_SCAM_PROXIMITY:
             self._trip("SCAM_PROXIMITY_WATCHDOG",
-                       f"Payment within {delta:.0f}s of scam alert — HARD BLOCK")
+                    f"Payment within {delta:.0f}s of scam alert (trip < {self.TRIP_SCAM_PROXIMITY}s)")
             return False
+        elif delta < self.MIN_SCAM_PROXIMITY:
+            self._warn("SCAM_PROXIMITY_WATCHDOG",
+                    f"Payment within {delta:.0f}s of scam alert (warn < {self.MIN_SCAM_PROXIMITY}s)")
         return True
 
+
     def _check_txn_count(self, ctx: TxnContext) -> bool:
-        if ctx.txn_count_this_hour > self.MAX_TXN_PER_HOUR:
+        if ctx.txn_count_this_hour > self.TRIP_MAX_TXN_PER_HOUR:
             self._trip("TXN_COUNT_WATCHDOG",
-                   f"{ctx.txn_count_this_hour} txns this hour (max {self.MAX_TXN_PER_HOUR})")
+                    f"{ctx.txn_count_this_hour} txns this hour (trip > {self.TRIP_MAX_TXN_PER_HOUR})")
             return False
+        elif ctx.txn_count_this_hour > self.MAX_TXN_PER_HOUR:
+            self._warn("TXN_COUNT_WATCHDOG",
+                    f"{ctx.txn_count_this_hour} txns this hour (warn > {self.MAX_TXN_PER_HOUR})")
         return True
+
 
     # --- SEQUENCE INTERLOCK ---
 
@@ -179,67 +216,70 @@ class TransactionWatchdog:
 
     def _check_network_velocity(self, ctx: TxnContext) -> bool:
         if not ctx.linked_txns:
-            return True  # no linkage data → skip
-
-        # Count accounts that forwarded within threshold of receipt
+            return True
         fast_forwarders = sum(
             1 for _, receipt, forward in ctx.linked_txns
             if (forward - receipt) <= self.NETWORK_FORWARD_MAX_SEC
         )
-
-        if fast_forwarders >= self.NETWORK_MIN_LINKED:
-            self._trip(
-                "NETWORK_VELOCITY_WATCHDOG",
-                f"{fast_forwarders} linked IDs forwarded within "
-                f"{self.NETWORK_FORWARD_MAX_SEC}s of receipt (min {self.NETWORK_MIN_LINKED})"
-            )
+        trip_forwarders = sum(
+            1 for _, receipt, forward in ctx.linked_txns
+            if (forward - receipt) <= self.TRIP_NETWORK_FORWARD_MAX_SEC
+        )
+        if trip_forwarders >= self.TRIP_NETWORK_MIN_LINKED:
+            self._trip("NETWORK_VELOCITY_WATCHDOG",
+                    f"{trip_forwarders} linked IDs forwarded within "
+                    f"{self.TRIP_NETWORK_FORWARD_MAX_SEC}s (trip min {self.TRIP_NETWORK_MIN_LINKED})")
             return False
+        elif fast_forwarders >= self.NETWORK_MIN_LINKED:
+            self._warn("NETWORK_VELOCITY_WATCHDOG",
+                    f"{fast_forwarders} linked IDs forwarded within "
+                    f"{self.NETWORK_FORWARD_MAX_SEC}s (warn min {self.NETWORK_MIN_LINKED})")
         return True
 
-    
-    
+
     # --- MAIN GATE (AND logic, like a PLC rung) ---
 
     def evaluate(self, ctx: TxnContext) -> Tuple[bool, str]:
-        """
-        All checks must pass. Any failure → BLOCK.
-        Returns (passed: bool, reason: str)
-        """
         self.state = "EVALUATING"
         self.tripped_checks = []
+        self.warnings = []
         self.fault_reason = None
-        self.check_results = {}  # ← ADD THIS
+        self.check_results = {}
 
         checks = [
-            ("velocity",       self._check_velocity),
-            ("time_of_day",    self._check_time_of_day),
-            ("scam_proximity", self._check_scam_proximity),
-            ("txn_count",      self._check_txn_count),
-            ("sequence",       self._check_action_sequence),
-            ("heartbeat",      self._check_heartbeat),
+            ("velocity",         self._check_velocity),
+            ("time_of_day",      self._check_time_of_day),
+            ("scam_proximity",   self._check_scam_proximity),
+            ("txn_count",        self._check_txn_count),
+            ("sequence",         self._check_action_sequence),
+            ("heartbeat",        self._check_heartbeat),
             ("network_velocity", self._check_network_velocity),
         ]
 
-        all_passed = True
         for name, fn in checks:
-            before = len(self.tripped_checks)
+            before_trip = len(self.tripped_checks)
+            before_warn = len(self.warnings)
             fn(ctx)
-            if len(self.tripped_checks) > before:
-                all_passed = False
-                self.check_results[name] = self.tripped_checks[-1]  # fault msg
+            if len(self.tripped_checks) > before_trip:
+                self.check_results[name] = self.tripped_checks[-1]
+            elif len(self.warnings) > before_warn:
+                self.check_results[name] = self.warnings[-1]
             else:
                 self.check_results[name] = "OK"
 
-                # Continue checking all (report all faults, like a PLC fault summary)
-
-        if all_passed:
-            self.state = "AUTHORIZED"
-            return True, "[VELOCITY] OK  [SEQUENCE] OK  [CONTEXT] OK  — Transaction authorized."
-        else:
+        if self.tripped_checks:
             self.state = "TRIPPED"
             reasons = "; ".join(self.tripped_checks)
             self.fault_reason = reasons
             return False, f"BLOCKED: {reasons}"
+        elif self.warnings:
+            self.state = "WARNED"
+            reasons = "; ".join(self.warnings)
+            return True, f"⚠️ WARNING: {reasons} — Authorized with caution."
+        else:
+            self.state = "AUTHORIZED"
+            return True, "[ALL CHECKS] OK — Transaction authorized."
+
             
     
 
@@ -250,11 +290,16 @@ class TransactionWatchdog:
         self.tripped_checks.append(msg)
         self.fault_reason = msg if self.fault_reason is None else self.fault_reason + " | " + msg
 
+    def _warn(self, code: str, detail: str):
+        msg = f"[{code}] {detail}"
+        self.warnings.append(msg)
+
     def reset(self):
-        """Reset to safe state after a trip (like PLC reset after fault clear)."""
         self.state = "SAFE"
         self.fault_reason = None
         self.tripped_checks = []
+        self.warnings = []
+
 
 
 # ============================================================
@@ -361,7 +406,7 @@ def run_demo():
 
     print("\n" + "=" * 60)
     print("  All scenarios evaluated. State machine:")
-    print("  SAFE → EVALUATING → TRIPPED / AUTHORIZED → SAFE (reset)")
+    print("  SAFE → EVALUATING → TRIPPED / WARNED / AUTHORIZED → SAFE (reset)")
     print("=" * 60)
 
 
