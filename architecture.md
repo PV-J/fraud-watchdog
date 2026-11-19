@@ -70,6 +70,19 @@ graph TD
 | `dwell_min` | `open_app`, `select_contact`, `enter_amount`, `verify`, `confirm` | Per-step minimum dwell (seconds) |
 | `expected_sequence` | list of 5 actions | Required action order |
 
+**Threshold summary:**
+
+| Check | OK | ⚠ WARN | ✗ TRIP |
+|-------|----|--------|--------|
+| Velocity | Δt ≥ 30s | 20s ≤ Δt < 30s | Δt < 20s |
+| Time of day | 8 ≤ h < 22 | 7 ≤ h < 23 | h < 7 or h ≥ 23 |
+| Scam proximity | Δt ≥ 300s | 250s ≤ Δt < 300s | Δt < 250s |
+| Txn count | ≤ 5 | 6 | > 6 |
+| Network velocity | < 5 in 90s | ≥ 5 in 90s | ≥ 8 in 60s |
+| Sequence/Dwell | correct | — | wrong |
+| Heartbeat | all present | — | any lost |
+
+
 **Loading:** `load_rules(path)` → `yaml.safe_load` → passed to `TransactionWatchdog.__init__`.
 
 **Validation:** Corrupt values raise `ValueError` (covered by `fuzz_rules.py`).
@@ -84,33 +97,43 @@ graph TD
 stateDiagram-v2
     [*] --> SAFE
     SAFE --> EVALUATING : evaluate()
-    EVALUATING --> AUTHORIZED : all checks pass
-    EVALUATING --> TRIPPED : any check fails
+    EVALUATING --> AUTHORIZED : all checks OK
+    EVALUATING --> WARNED : soft threshold breached
+    EVALUATING --> TRIPPED : hard threshold breached
     AUTHORIZED --> SAFE : reset()
+    WARNED --> SAFE : user confirms / reset()
     TRIPPED --> SAFE : reset()
 ```
 
 ### Check Pipeline (AND-gated)
 
-| # | Check | Method | Trips on |
-|---|-------|--------|----------|
-| 1 | Velocity | `_check_velocity` | Δt < `min_seconds_between_txns` |
-| 2 | Time of day | `_check_time_of_day` | `now.hour ∉ normal_hours` |
-| 3 | Scam proximity | `_check_scam_proximity` | Δt < `min_scam_proximity_sec` |
-| 4 | Txn count | `_check_txn_count` | count > `max_txn_per_hour` |
-| 5 | Sequence + Dwell | `_check_action_sequence` | Wrong order OR dwell < min |
-| 6 | Heartbeat | `_check_heartbeat` | Any presence signal lost |
-| 7 | Network velocity | `_check_network_velocity` | ≥N linked IDs forwarded in window |
+| # | Check | Trips on | Warns on |
+|---|-------|----------|----------|
+| 1 | Velocity | Δt < `trip_seconds_between_txns` | `trip` ≤ Δt < `min_seconds_between_txns` |
+| 2 | Time of day | hour outside `trip_normal_hours` | hour outside `normal_hours` (but inside trip) |
+| 3 | Scam proximity | Δt < `trip_scam_proximity_sec` | `trip` ≤ Δt < `min_scam_proximity_sec` |
+| 4 | Txn count | count > `trip_max_txn_per_hour` | `max` < count ≤ `trip_max` |
+| 5 | Sequence + Dwell | Wrong order OR dwell < min | — (binary) |
+| 6 | Heartbeat | Any signal lost | — (binary) |
+| 7 | Network velocity | ≥ `trip_network_min_linked` in `trip_forward` sec | ≥ `network_min_linked` in `forward_max` sec |
 
-**Logic:** All 7 must pass → `AUTHORIZED`. Any single failure → `TRIPPED`.
-All checks run (no short-circuit) → full fault report.
+
+
+**Logic:** All 7 must pass → AUTHORIZED. Any hard failure → TRIPPED.
+Any soft failure (no hard) → WARNED. All checks run (no short-circuit) → full fault report.
+
+
+
+
 
 ### Output
 
 ```python
 evaluate(ctx) → (passed: bool, reason: str)
-# passed=True:  "[VELOCITY] OK  [SEQUENCE] OK  ... — Transaction authorized."
-# passed=False: "BLOCKED: [CODE] detail | [CODE] detail"
+# AUTHORIZED:  passed=True,  "[ALL CHECKS] OK — Transaction authorized."
+# WARNED:      passed=True,  "⚠️ WARNING: [CODE] detail — Authorized with caution."
+# TRIPPED:     passed=False, "BLOCKED: [CODE] detail"
+
 ```
 
 ## Layer 5: Presentation
