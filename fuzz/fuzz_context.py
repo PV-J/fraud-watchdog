@@ -98,7 +98,13 @@ def test_known_scenarios(key):
     wd = make_watchdog()
     ctx = build_context(scn)
     passed, reason = wd.evaluate(ctx)
-    actual = "PASS" if passed else "TRIPPED"
+    #actual = "PASS" if passed else "TRIPPED"
+    if wd.state == "TRIPPED":
+        actual = "TRIPPED"
+    elif wd.state == "WARNED":
+        actual = "WARNED"
+    else:
+        actual = "PASS"
     assert actual == scn["expected"], f"{key}: Expected {scn['expected']}, got {actual}: {reason}"
     if not passed:
         for fault in scn.get("expected_faults", []):
