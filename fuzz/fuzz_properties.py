@@ -59,3 +59,40 @@ def test_trip_sticky(scn_key):
         assert wd.state in ("TRIPPED", "AUTHORIZED")  # never silently SAFE
         wd.reset()
         assert wd.state == "SAFE"   
+
+# --- Property 4: Monotonicity (severity never downgrades on re-eval) ---
+
+@given(scn_key=st.sampled_from(list(SCENARIOS.keys())))
+@settings(deadline=None)
+def test_monotonicity_severity(scn_key):
+    """Re-evaluating the same context must never downgrade severity."""
+    wd = make_watchdog()
+    ctx = build_context(SCENARIOS[scn_key])
+    passed1, _ = wd.evaluate(ctx)
+    state1 = wd.state
+    wd.reset()
+
+    passed2, _ = wd.evaluate(ctx)
+    state2 = wd.state
+
+    assert state1 == state2, f"Severity changed: {state1} → {state2}"
+    assert passed1 == passed2
+
+
+# --- Property 5: WARN is non-blocking ---
+
+@given(scn_key=st.sampled_from(list(SCENARIOS.keys())))
+@settings(deadline=None)
+def test_warned_is_non_blocking(scn_key):
+    """WARNED state must return passed=True (payment can proceed)."""
+    wd = make_watchdog()
+    ctx = build_context(SCENARIOS[scn_key])
+    passed, reason = wd.evaluate(ctx)
+
+    if wd.state == "WARNED":
+        assert passed, "WARNED must be non-blocking (passed=True)"
+        assert "WARNING" in reason
+    elif wd.state == "TRIPPED":
+        assert not passed
+    elif wd.state == "AUTHORIZED":
+        assert passed

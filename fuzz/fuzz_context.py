@@ -45,23 +45,10 @@ def test_no_crash(scn):
     passed, reason = wd.evaluate(ctx)
     assert isinstance(passed, bool)
     assert isinstance(reason, str)
-    assert wd.state in ("AUTHORIZED", "TRIPPED")
+    assert wd.state in ("AUTHORIZED", "WARNED", "TRIPPED")
     wd.reset()
     assert wd.state == "SAFE"
 
-#@given(scn=scenario_dict().filter(
-#    lambda s: s["txn_count_this_hour"] <= 3
-#    and s["hour"] in range(8, 22)
-#    and s["screen_on"] and s["touch_active"] and s["no_overlay"]
-#    and s["last_txn_offset_sec"] is None
-#    and s["last_scam_alert_offset_sec"] is None
-#    and s["linked_txns"] is None
-#    and [a for a, _ in s["events"]] == ["open_app", "select_contact", "enter_amount", "verify", "confirm"]
-#    # and all(s["events"][i+1][1] - s["events"][i][1] >= 5 for i in range(len(s["events"])-1))
-#   and all(s["events"][i+1][1] - s["events"][i][1] >= (30 if s["events"][i][0] == "confirm" else 5)
- #   for i in range(len(s["events"])-1)
-#)   
-#))
 @settings(max_examples=1000, deadline=None)
 
 def benign_scenario():

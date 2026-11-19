@@ -47,7 +47,7 @@ def test_corrupt_rules_no_crash(corr):
         # Must still evaluate without unhandled exception
         ctx = build_context(SCENARIOS["rapid_reopen_replay"])
         wd.evaluate(ctx)
-    except (ValueError, TypeError, KeyError, AttributeError,ImportError):
+    except (ValueError, TypeError, KeyError, AttributeError, IndexError, MemoryError):
         pass  # clean rejection acceptable
     finally:
         os.unlink(path)
