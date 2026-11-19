@@ -15,6 +15,8 @@ import os
 if os.name == "nt":
     os.system("")  # enables ANSI color in Windows console 
 
+
+
 def run_scenario(key: str, num: int = 1):
     s = SCENARIOS[key]
     base_time = datetime(2026, 10, 1, s["hour"], 0, 0)
@@ -41,6 +43,7 @@ def run_scenario(key: str, num: int = 1):
         no_overlay=s["no_overlay"],
         target_vpa="test@upi",
         txn_count_this_hour=s.get("txn_count_this_hour", 1),
+        linked_txns=s.get("linked_txns", None),      # Phase 3 network velocity watchdog
     )
 
     passed, reason = wd.evaluate(ctx)
@@ -61,12 +64,30 @@ def run_scenario(key: str, num: int = 1):
     print(f"  Result:  {status}")
     print(f"  Reason:  {reason}")
 
+    # Per-axis breakdown
+    
+    for axis, result in wd.check_results.items():
+        if result == "OK":
+            print(f"  \033[92m✓ {axis:<16} OK\033[0m")
+        elif result in wd.warnings:
+            print(f"  \033[93m⚠ {axis:<16} {result}\033[0m")
+        else:
+            print(f"  \033[91m✗ {axis:<16} {result}\033[0m")   
+
+   
     # Verify expected outcome
     expected = s["expected"]
-    actual = "PASS" if passed else "TRIPPED"
+    if wd.state == "TRIPPED":
+        actual ="TRIPPED"
+    elif wd.state == "WARNED":
+        actual = "WARNED"
+    else: 
+        actual = "PASS"
     if actual != expected:
-        print(f"  ⚠️  MISMATCH! Expected {expected}, got {actual}")
-
+        # WARNED is acceptable where PASS is expected (non-blocking)
+        if not (expected == "PASS" and actual == "WARNED"):
+            print(f"  ⚠️   MISMATCH! Expected {expected}, got {actual}")
+    
     # Verify expected faults
     if not passed:
         for fault in s["expected_faults"]:
@@ -84,7 +105,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 55)
-    print("  FRAUD-WATCHDOG v0.1")
+    print("  FRAUD-WATCHDOG v0.4")
     print("  PLC-Style Temporal Gate for Payments")
     print("=" * 55)
 
@@ -103,7 +124,7 @@ def main():
         
     print(f"\n{'=' * 55}")
     print(f"  {len(SCENARIOS)} scenarios evaluated.")
-    print(f"  State machine: SAFE → EVALUATING → TRIPPED/AUTHORIZED → SAFE")
+    print(f"  State machine: SAFE → EVALUATING → TRIPPED/WARNED/AUTHORIZED → SAFE")
     print(f"{'=' * 55}")
 
 
