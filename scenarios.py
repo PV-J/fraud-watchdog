@@ -365,6 +365,30 @@ SCENARIOS = {
         "no_overlay": True,
     },
 
+    "soft_warning_velocity": {
+        "name": "Soft Warning — Slightly Fast (25s after confirm)",
+        "description": (
+            "Payment 25 seconds after previous confirm. Under the 30s "
+            "normal threshold but above the 20s trip threshold. "
+            "Suspicious — could be a fast human or early automation."
+        ),
+        "expected": "WARNED",
+        "expected_faults": ["VELOCITY_WATCHDOG"],
+        "events": [
+            ("open_app",       0),
+            ("select_contact",  8),
+            ("enter_amount",   14),
+            ("verify",         19),
+            ("confirm",        23),
+        ],
+        "hour": 12,
+        "txn_count_this_hour": 1,
+        "last_txn_offset_sec": -2,  # was -25
+        "last_scam_alert_offset_sec": None,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+    },
 
 
 
