@@ -1,11 +1,20 @@
 # rules/default.yaml
 watchdog:
+  # WARN thresholds (suspicious → payment proceeds with friction)
   min_seconds_between_txns: 30
   min_scam_proximity_sec: 300
   max_txn_per_hour: 5
-  normal_hours: [8, 22]   # 8 AM to 10 PM
+  normal_hours: [8, 22]
   network_min_linked: 5
   network_forward_max_sec: 90
+
+  # TRIP thresholds (confirmed threat → hard block)
+  trip_seconds_between_txns: 20
+  trip_scam_proximity_sec: 250
+  trip_max_txn_per_hour: 6
+  trip_normal_hours: [7, 23]
+  trip_network_min_linked: 8
+  trip_network_forward_max_sec: 60
 
 dwell_min:
   open_app: 2
