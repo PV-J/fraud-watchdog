@@ -4,6 +4,8 @@ Usage:
     python demo.py                    # Run all scenarios
     python demo.py --scenario digital_arrest   # Run one
 Auth: PVJ/1/10/26
+v0.4 21/11/26
+v0.5 22/11/26
 """
 
 import argparse
@@ -44,25 +46,40 @@ def run_scenario(key: str, num: int = 1):
         target_vpa="test@upi",
         txn_count_this_hour=s.get("txn_count_this_hour", 1),
         linked_txns=s.get("linked_txns", None),      # Phase 3 network velocity watchdog
+        geo_distance_km=s.get("geo_distance_km", 0.0),
+        device_id=s.get("device_id", ""),
+        known_devices=s.get("known_devices", set()),
+        txn_amount=s.get("txn_amount", 0.0),
+        mcc=s.get("mcc", ""),
+        expected_mccs=s.get("expected_mccs", set()),
+        suspicious_mccs=s.get("suspicious_mccs", set()),
     )
 
     passed, reason = wd.evaluate(ctx)
 
     # --- Output ---
-    icon = "✅" if passed else "🚫"
-    status = "PASS" if passed else "TRIPPED"
-
-    color = "\033[92m" if passed else "\033[91m" 
+    
+    if wd.state == "TRIPPED":
+        icon = "🚫"
+        status = "TRIPPED"
+        color = "\033[91m"
+    elif wd.state == "WARNED":
+        icon = "⚠️"
+        status = "WARNED"
+        color = "\033[93m"
+    else:
+        icon = "✅"
+        status = "PASS"
+        color = "\033[92m"
     reset = "\033[0m"
-    
+
     print(f"\n{'─' * 55}")
-    
-    print(f" {color} {num}. {color}{s['name']} [{status}]{reset}")   
-    # print(f"  {num} {s['name']} [{status}] ")
+    print(f" {color} {num}. {color}{s['name']} [{status}]{reset}")
     print(f"  {'─' * 40}")
     print(f"  {s['description']}")
     print(f"  Result:  {status}")
     print(f"  Reason:  {reason}")
+
 
     # Per-axis breakdown
     

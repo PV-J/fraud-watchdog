@@ -1,0 +1,308 @@
+{
+  "digital_arrest": {
+    "state": "TRIPPED",
+    "passed": false,
+    "reason": "BLOCKED: [VELOCITY_WATCHDOG] Only 14s since last txn (trip < 20s); [SCAM_PROXIMITY_WATCHDOG] Payment within 124s of scam alert (trip < 250s); [DWELL_TIME_VIOLATION] open_app \u2192 next in 1.0s (min 2s)",
+    "checks": {
+      "velocity": "[VELOCITY_WATCHDOG] Only 14s since last txn (trip < 20s)",
+      "time_of_day": "OK",
+      "scam_proximity": "[SCAM_PROXIMITY_WATCHDOG] Payment within 124s of scam alert (trip < 250s)",
+      "txn_count": "OK",
+      "sequence": "[DWELL_TIME_VIOLATION] open_app \u2192 next in 1.0s (min 2s)",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "legit_payment": {
+    "state": "AUTHORIZED",
+    "passed": true,
+    "reason": "[ALL CHECKS] OK \u2014 Transaction authorized.",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "OK",
+      "txn_count": "OK",
+      "sequence": "OK",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "overlay_attack": {
+    "state": "TRIPPED",
+    "passed": false,
+    "reason": "BLOCKED: [HEARTBEAT_LOSS] Presence signal lost: overlay_detected",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "OK",
+      "txn_count": "OK",
+      "sequence": "OK",
+      "heartbeat": "[HEARTBEAT_LOSS] Presence signal lost: overlay_detected",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "late_night_rush": {
+    "state": "TRIPPED",
+    "passed": false,
+    "reason": "BLOCKED: [TIME_OF_DAY_WATCHDOG] Unusual hour: 3:00 (outside trip window)",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "[TIME_OF_DAY_WATCHDOG] Unusual hour: 3:00 (outside trip window)",
+      "scam_proximity": "OK",
+      "txn_count": "OK",
+      "sequence": "OK",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "otp_phishing": {
+    "state": "TRIPPED",
+    "passed": false,
+    "reason": "BLOCKED: [SCAM_PROXIMITY_WATCHDOG] Payment within 116s of scam alert (trip < 250s); [DWELL_TIME_VIOLATION] open_app \u2192 next in 1.0s (min 2s)",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "[SCAM_PROXIMITY_WATCHDOG] Payment within 116s of scam alert (trip < 250s)",
+      "txn_count": "OK",
+      "sequence": "[DWELL_TIME_VIOLATION] open_app \u2192 next in 1.0s (min 2s)",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "velocity_burst": {
+    "state": "TRIPPED",
+    "passed": false,
+    "reason": "BLOCKED: [TXN_COUNT_WATCHDOG] 7 txns this hour (trip > 6)",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "OK",
+      "txn_count": "[TXN_COUNT_WATCHDOG] 7 txns this hour (trip > 6)",
+      "sequence": "OK",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "screen_off_replay": {
+    "state": "TRIPPED",
+    "passed": false,
+    "reason": "BLOCKED: [DWELL_TIME_VIOLATION] enter_amount \u2192 next in 4.0s (min 5s); [HEARTBEAT_LOSS] Presence signal lost: screen_off, no_touch",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "OK",
+      "txn_count": "OK",
+      "sequence": "[DWELL_TIME_VIOLATION] enter_amount \u2192 next in 4.0s (min 5s)",
+      "heartbeat": "[HEARTBEAT_LOSS] Presence signal lost: screen_off, no_touch",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "elderly_user_slow": {
+    "state": "AUTHORIZED",
+    "passed": true,
+    "reason": "[ALL CHECKS] OK \u2014 Transaction authorized.",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "OK",
+      "txn_count": "OK",
+      "sequence": "OK",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "mdr_threshold_qr_split": {
+    "state": "TRIPPED",
+    "passed": false,
+    "reason": "BLOCKED: [SEQUENCE_VIOLATION] Wrong order: ['open_app', 'scan_qr', 'confirm', 'scan_qr', 'confirm']",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "OK",
+      "txn_count": "OK",
+      "sequence": "[SEQUENCE_VIOLATION] Wrong order: ['open_app', 'scan_qr', 'confirm', 'scan_qr', 'confirm']",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "diwali_bonus_fake_qr": {
+    "state": "TRIPPED",
+    "passed": false,
+    "reason": "BLOCKED: [SCAM_PROXIMITY_WATCHDOG] Payment within 69s of scam alert (trip < 250s); [SEQUENCE_VIOLATION] Wrong order: ['open_app', 'scan_qr', 'enter_amount', 'verify', 'confirm']",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "[SCAM_PROXIMITY_WATCHDOG] Payment within 69s of scam alert (trip < 250s)",
+      "txn_count": "OK",
+      "sequence": "[SEQUENCE_VIOLATION] Wrong order: ['open_app', 'scan_qr', 'enter_amount', 'verify', 'confirm']",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "mule_velocity_burst": {
+    "state": "TRIPPED",
+    "passed": false,
+    "reason": "BLOCKED: [TXN_COUNT_WATCHDOG] 8 txns this hour (trip > 6); [DWELL_TIME_VIOLATION] select_contact \u2192 next in 2.0s (min 3s)",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "OK",
+      "txn_count": "[TXN_COUNT_WATCHDOG] 8 txns this hour (trip > 6)",
+      "sequence": "[DWELL_TIME_VIOLATION] select_contact \u2192 next in 2.0s (min 3s)",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "busy_legit_hour": {
+    "state": "AUTHORIZED",
+    "passed": true,
+    "reason": "[ALL CHECKS] OK \u2014 Transaction authorized.",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "OK",
+      "txn_count": "OK",
+      "sequence": "OK",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "mule_network_velocity": {
+    "state": "TRIPPED",
+    "passed": false,
+    "reason": "BLOCKED: [NETWORK_VELOCITY_WATCHDOG] 12 linked IDs forwarded within 60s (trip min 8)",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "OK",
+      "txn_count": "OK",
+      "sequence": "OK",
+      "heartbeat": "OK",
+      "network_velocity": "[NETWORK_VELOCITY_WATCHDOG] 12 linked IDs forwarded within 60s (trip min 8)",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "rapid_reopen_replay": {
+    "state": "TRIPPED",
+    "passed": false,
+    "reason": "BLOCKED: [DWELL_TIME_VIOLATION] confirm \u2192 next in 5.0s (min 30s)",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "OK",
+      "txn_count": "OK",
+      "sequence": "[DWELL_TIME_VIOLATION] confirm \u2192 next in 5.0s (min 30s)",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "soft_warning_velocity": {
+    "state": "WARNED",
+    "passed": true,
+    "reason": "\u26a0\ufe0f WARNING: [VELOCITY_WATCHDOG] Only 25s since last txn (warn < 30s) \u2014 Authorized with caution.",
+    "checks": {
+      "velocity": "[VELOCITY_WATCHDOG] Only 25s since last txn (warn < 30s)",
+      "time_of_day": "OK",
+      "scam_proximity": "OK",
+      "txn_count": "OK",
+      "sequence": "OK",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "geo_mismatch_simsim": {
+    "state": "TRIPPED",
+    "passed": false,
+    "reason": "BLOCKED: [GEO_MISMATCH_WATCHDOG] Device 600km from last known location (trip > 500km)",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "OK",
+      "txn_count": "OK",
+      "sequence": "OK",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "[GEO_MISMATCH_WATCHDOG] Device 600km from last known location (trip > 500km)",
+      "device": "OK",
+      "mcc": "OK"
+    }
+  },
+  "device_anomaly_new_phone": {
+    "state": "TRIPPED",
+    "passed": false,
+    "reason": "BLOCKED: [DEVICE_ANOMALY_WATCHDOG] New device, amount \u20b975,000 (trip > \u20b950,000)",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "OK",
+      "txn_count": "OK",
+      "sequence": "OK",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "[DEVICE_ANOMALY_WATCHDOG] New device, amount \u20b975,000 (trip > \u20b950,000)",
+      "mcc": "OK"
+    }
+  },
+  "mcc_anomaly_digital_goods": {
+    "state": "TRIPPED",
+    "passed": false,
+    "reason": "BLOCKED: [MCC_ANOMALY_WATCHDOG] MCC 6051 is in suspicious set (trip)",
+    "checks": {
+      "velocity": "OK",
+      "time_of_day": "OK",
+      "scam_proximity": "OK",
+      "txn_count": "OK",
+      "sequence": "OK",
+      "heartbeat": "OK",
+      "network_velocity": "OK",
+      "geolocation": "OK",
+      "device": "OK",
+      "mcc": "[MCC_ANOMALY_WATCHDOG] MCC 6051 is in suspicious set (trip)"
+    }
+  }
+}

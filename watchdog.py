@@ -3,6 +3,8 @@ fraud-watchdog — PLC-style fail-safe temporal gate for payments.
 Default state: BLOCKED. Must pass ALL checks to proceed.
 Auth:PV-J 30/9/26
 Modified on 1/10/26
+v0.4 21/11/26
+v0.5 22/11/26
 
 """
 
@@ -40,6 +42,17 @@ class TxnContext:
     target_vpa: str = ""
     txn_count_this_hour: int = 1
     linked_txns: list[tuple[str, float, float]] | None = None # Phase 3 network velocity watchdog
+    # --- Check 8: Geolocation ---
+    geo_distance_km: float = 0.0       # haversine distance from last known location
+     # --- Check 9: Device ---
+    device_id: str = ""
+    known_devices: set = field(default_factory=set)
+    txn_amount: float = 0.0
+    # --- Check 10: MCC ---
+    mcc: str = ""
+    expected_mccs: set = field(default_factory=set)
+    suspicious_mccs: set = field(default_factory=set)
+
 
 class TransactionWatchdog:
     """
@@ -77,6 +90,16 @@ class TransactionWatchdog:
         if not isinstance(nh, (list, tuple)) or len(nh) != 2:
             raise ValueError(f"normal_hours must be [start, end], got: {nh!r}")
 
+        # Validate trip_normal_hours
+        tnh = w["trip_normal_hours"]
+        if not isinstance(tnh, (list, tuple)) or len(tnh) != 2:
+            raise ValueError(f"trip_normal_hours must be [start, end], got: {tnh!r}")
+        if not (isinstance(tnh[0], int) and isinstance(tnh[1], int)):
+            raise ValueError(f"trip_normal_hours must be integers, got: {tnh!r}")
+        if tnh[1] - tnh[0] > 48:
+            raise ValueError(f"trip_normal_hours range too wide: {tnh!r}")
+
+
         # WARN thresholds (suspicious → payment proceeds with friction)
         self.MIN_SECONDS_BETWEEN_TXNS = w["min_seconds_between_txns"]
         self.MIN_SCAM_PROXIMITY = w["min_scam_proximity_sec"]
@@ -96,6 +119,18 @@ class TransactionWatchdog:
         # Dwell + sequence (binary — no soft/hard distinction)
         self.MIN_DWELL = rules["dwell_min"]
         self.EXPECTED_SEQUENCE = rules["expected_sequence"]
+
+         # Check 8: Geolocation
+        self.GEO_WARN_KM = w["geo_warn_km"]
+        self.GEO_TRIP_KM = w["geo_trip_km"]
+
+        # Check 9: Device
+        self.DEVICE_WARN_AMOUNT = w["device_warn_amount"]
+        self.DEVICE_TRIP_AMOUNT = w["device_trip_amount"]
+
+        # Check 10: MCC
+        self.EXPECTED_MCCS = set(w.get("expected_mccs", []))
+        self.SUSPICIOUS_MCCS = set(w.get("suspicious_mccs", []))
  
 
     # --- WATCHDOG TIMERS ---
@@ -226,7 +261,45 @@ class TransactionWatchdog:
                     f"{self.NETWORK_FORWARD_MAX_SEC}s (warn min {self.NETWORK_MIN_LINKED})")
         return True
 
+    def _check_geolocation(self, ctx: TxnContext) -> bool:
+        if ctx.geo_distance_km == 0.0:
+            return True  # no geo data → skip
+        if ctx.geo_distance_km > self.GEO_TRIP_KM:
+            self._trip("GEO_MISMATCH_WATCHDOG",
+                    f"Device {ctx.geo_distance_km:.0f}km from last known location (trip > {self.GEO_TRIP_KM}km)")
+            return False
+        elif ctx.geo_distance_km > self.GEO_WARN_KM:
+            self._warn("GEO_MISMATCH_WATCHDOG",
+                    f"Device {ctx.geo_distance_km:.0f}km from last known location (warn > {self.GEO_WARN_KM}km)")
+        return True
 
+    def _check_device(self, ctx: TxnContext) -> bool:
+        if not ctx.device_id or not ctx.known_devices:
+            return True  # no device data → skip
+        if ctx.device_id in ctx.known_devices:
+            return True  # known device → OK
+        # New device
+        if ctx.txn_amount > self.DEVICE_TRIP_AMOUNT:
+            self._trip("DEVICE_ANOMALY_WATCHDOG",
+                    f"New device, amount ₹{ctx.txn_amount:,.0f} (trip > ₹{self.DEVICE_TRIP_AMOUNT:,.0f})")
+            return False
+        elif ctx.txn_amount > self.DEVICE_WARN_AMOUNT:
+            self._warn("DEVICE_ANOMALY_WATCHDOG",
+                    f"New device, amount ₹{ctx.txn_amount:,.0f} (warn > ₹{self.DEVICE_WARN_AMOUNT:,.0f})")
+        return True
+
+    def _check_mcc(self, ctx: TxnContext) -> bool:
+        if not ctx.mcc:
+            return True  # no MCC data → skip
+        if ctx.mcc in self.SUSPICIOUS_MCCS:
+            self._trip("MCC_ANOMALY_WATCHDOG",
+                    f"MCC {ctx.mcc} is in suspicious set (trip)")
+            return False
+        if ctx.mcc not in self.EXPECTED_MCCS:
+            self._warn("MCC_ANOMALY_WATCHDOG",
+                    f"MCC {ctx.mcc} not in expected set (warn)")
+        return True
+    
     # --- MAIN GATE (AND logic, like a PLC rung) ---
 
     def evaluate(self, ctx: TxnContext) -> Tuple[bool, str]:
@@ -244,6 +317,9 @@ class TransactionWatchdog:
             ("sequence",         self._check_action_sequence),
             ("heartbeat",        self._check_heartbeat),
             ("network_velocity", self._check_network_velocity),
+            ("geolocation",      self._check_geolocation),       # ← new
+            ("device",           self._check_device),            # ← new
+            ("mcc",              self._check_mcc),               # ← new
         ]
 
         for name, fn in checks:

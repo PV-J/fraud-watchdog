@@ -7,6 +7,17 @@ watchdog:
   normal_hours: [8, 22]
   network_min_linked: 5
   network_forward_max_sec: 90
+   # Check 8: Geolocation
+  geo_warn_km: 200
+  geo_trip_km: 500
+  # Check 9: Device
+  device_warn_amount: 10000
+  device_trip_amount: 50000
+  # Check 10: MCC 
+  # These are real ISO 18245 MCC codes: 5300=Grocery, 5411=Gas, 5812=Computer Software, 6051=Digital Goods, 6211=Telecom,
+  # 6540=Securities, 7299=Other Business Services. Adjust to your domain
+  expected_mccs: ["5300", "5411", "5499", "5812", "5815", "5999", "6051"]
+  suspicious_mccs: ["6051", "6211", "6540", "7299"]
 
   # TRIP thresholds (confirmed threat → hard block)
   trip_seconds_between_txns: 20

@@ -2,6 +2,8 @@
 fraud-watchdog — Scam scenario definitions.
 Each scenario is a dict that can be fed to demo.py.
 Auth: P-VJ/1/10/26
+v0.4 21/11/26
+v0.5 22/11/26
 """
 
 SCENARIOS = {
@@ -365,6 +367,114 @@ SCENARIOS = {
         "no_overlay": True,
     },
 
+    "soft_warning_velocity": {
+        "name": "Soft Warning — Slightly Fast (25s after confirm)",
+        "description": (
+            "Payment 25 seconds after previous confirm. Under the 30s "
+            "normal threshold but above the 20s trip threshold. "
+            "Suspicious — could be a fast human or early automation."
+        ),
+        "expected": "WARNED",
+        "expected_faults": ["VELOCITY_WATCHDOG"],
+        "events": [
+            ("open_app",       0),
+            ("select_contact",  8),
+            ("enter_amount",   14),
+            ("verify",         19),
+            ("confirm",        23),
+        ],
+        "hour": 12,
+        "txn_count_this_hour": 1,
+        "last_txn_offset_sec": -2,  # was -25
+        "last_scam_alert_offset_sec": None,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+    },
+
+    "geo_mismatch_simsim": {
+        "name": "Geolocation Mismatch (600km jump)",
+        "description": (
+            "Device detected 600km from last known location. "
+            "Classic SIM-swap or stolen-device signature."
+        ),
+        "expected": "TRIPPED",
+        "expected_faults": ["GEO_MISMATCH_WATCHDOG"],
+        "events": [
+            ("open_app",       0),
+            ("select_contact",  8),
+            ("enter_amount",   14),
+            ("verify",         19),
+            ("confirm",        23),
+        ],
+        "hour": 14,
+        "txn_count_this_hour": 1,
+        "last_txn_offset_sec": -300,
+        "last_scam_alert_offset_sec": None,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+        "geo_distance_km": 600.0,
+    },
+
+    "device_anomaly_new_phone": {
+        "name": "Device Anomaly (New Phone, ₹75k)",
+        "description": (
+            "Payment from a device never seen before, amount ₹75,000. "
+            "Classic stolen-credentials attack on a new device."
+        ),
+        "expected": "TRIPPED",
+        "expected_faults": ["DEVICE_ANOMALY_WATCHDOG"],
+        "events": [
+            ("open_app",       0),
+            ("select_contact",  8),
+            ("enter_amount",   14),
+            ("verify",         19),
+            ("confirm",        23),
+        ],
+        "hour": 11,
+        "txn_count_this_hour": 1,
+        "last_txn_offset_sec": -600,
+        "last_scam_alert_offset_sec": None,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+        "geo_distance_km": 0.0,
+        "device_id": "NEW_DEVICE_XYZ",
+        "known_devices": {"DEVICE_ABC", "DEVICE_DEF"},
+        "txn_amount": 75000.0,
+    },
+
+    "mcc_anomaly_digital_goods": {
+        "name": "MCC Anomaly (Digital Goods, Suspicious)",
+        "description": (
+            "Payment to MCC 6051 (Digital Goods/Money Transfers). "
+            "In the suspicious set — common mule-attack target."
+        ),
+        "expected": "TRIPPED",
+        "expected_faults": ["MCC_ANOMALY_WATCHDOG"],
+        "events": [
+            ("open_app",       0),
+            ("select_contact",  8),
+            ("enter_amount",   14),
+            ("verify",         19),
+            ("confirm",        23),
+        ],
+        "hour": 15,
+        "txn_count_this_hour": 1,
+        "last_txn_offset_sec": -600,
+        "last_scam_alert_offset_sec": None,
+        "screen_on": True,
+        "touch_active": True,
+        "no_overlay": True,
+        "geo_distance_km": 0.0,
+        "device_id": "DEVICE_ABC",
+        "known_devices": {"DEVICE_ABC", "DEVICE_DEF"},
+        "txn_amount": 25000.0,
+        "mcc": "6051",
+        "expected_mccs": {"5300", "5411", "5499", "5812"},
+        "suspicious_mccs": {"6051", "6211", "6540", "7299"},
+    },
 
 
 

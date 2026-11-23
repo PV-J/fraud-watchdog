@@ -105,7 +105,7 @@ stateDiagram-v2
     TRIPPED --> SAFE : reset()
 ```
 
-### Check Pipeline (AND-gated)
+### Check Pipeline (Ten AND-gated Checks)
 
 | # | Check | Trips on | Warns on |
 |---|-------|----------|----------|
@@ -116,6 +116,9 @@ stateDiagram-v2
 | 5 | Sequence + Dwell | Wrong order OR dwell < min | — (binary) |
 | 6 | Heartbeat | Any signal lost | — (binary) |
 | 7 | Network velocity | ≥ `trip_network_min_linked` in `trip_forward` sec | ≥ `network_min_linked` in `forward_max` sec |
+| 8 | Geolocation | distance > `geo_trip_km` (500km) | `geo_warn_km` (200km) < distance ≤ 500km |
+| 9 | Device anomaly | New device + amount > `device_trip_amount` (₹50k) | New device + amount > `device_warn_amount` (₹10k) |
+| 10 | MCC anomaly | MCC in `suspicious_mccs` | MCC not in `expected_mccs` (and not suspicious) |
 
 
 
